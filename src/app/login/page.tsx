@@ -7,7 +7,7 @@ export default function LoginPage(): React.ReactElement {
       <div className="w-1/2 flex justify-center items-center bg-gradient-to-r from-[#041759] to-[#02081E]">
         Carousel
       </div>
-      <div className="w-1/2 flex justify-center items-center bg-[#02081E]">
+      <div className="w-1/2 flex flex-col justify-center items-center bg-[#02081E]">
         <div className="w-3/4 flex flex-col justify-center items-center gap-8">
           <div className="flex flex-col items-center">
             <h1 className="text-3xl">Hi I'm <strong>FM AI</strong>,</h1>
@@ -21,6 +21,9 @@ export default function LoginPage(): React.ReactElement {
               <span className="w-full font-normal">Login with Google</span>
             </div>
           </button>
+        </div>
+        <div className="bottom-20 absolute p-4">
+          <Image src="/fm-logo-white.png" alt="FM AI Logo" width={150} height={50} />
         </div>
       </div>
     </div>
