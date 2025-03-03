@@ -9,8 +9,10 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@auth/core": "^0.34.2",
     "ai": "^4.1.45",
     "next": "15.1.7",
+    "next-auth": "^4.24.11",
     "next-ws": "^2.0.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

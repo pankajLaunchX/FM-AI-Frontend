@@ -1,12 +1,15 @@
 "use client"
 
 import { Message } from '@/types/next';
-import React, { useEffect, useState } from 'react';
+import React, { use, useEffect, useState } from 'react';
 import io from 'socket.io-client';
 import Image from 'next/image';
 import { IoPersonCircle, IoPulse, IoSend } from "react-icons/io5";
 import { GiHamburgerMenu } from 'react-icons/gi';
 import { FiPlus } from 'react-icons/fi';
+import { signOut } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
+import { redirect, useRouter } from 'next/navigation';
 
 const conversation: Message[] = [
     {
@@ -60,7 +63,17 @@ export default function ChatPage(): React.ReactElement {
     const [messages, setMessages] = useState<Message[]>()
     const [inputMessage, setInputMessage] = useState<Message>()
 
-    const ENDPOINT = process.env.CHAT_API
+    const { data: session, status } = useSession()
+    const router = useRouter()
+
+    useEffect(() => {
+        if (status === 'unauthenticated') {
+            redirect('/login')
+        }
+    }, [status])
+
+
+    // const ENDPOINT = process.env.CHAT_API
 
     // useEffect(() => {
     //     socketInitializer()
@@ -104,74 +117,81 @@ export default function ChatPage(): React.ReactElement {
     }
 
     return (
-        <div className='w-full h-screen flex bg-white text-black'>
-            {/* Side bar */}
-            <div className="w-[360px] shadow-xl h-full px-3 flex flex-col gap-4">
-                <div className='w-full h-14 flex items-center gap-3'>
-                    <div className='px-4 flex items-center gap-3'>
 
-                        <GiHamburgerMenu className='h-6 w-6' />
-                        <p className='text-2xl'>FM AI</p>
+        <div className='w-full h-screen flex justify-center items-center bg-white text-black'>
+            {status === 'loading' && <h1>Loading...</h1>}
+            {status === 'authenticated' && 
+            <>
+                {/* Side bar */}
+                <div className="w-[360px] shadow-xl h-full px-3 flex flex-col gap-4">
+                    <div className='w-full h-14 flex items-center gap-3'>
+                        <div className='px-4 flex items-center gap-3'>
+                            <GiHamburgerMenu className='h-6 w-6' />
+                            <p className='text-2xl'>FM AI</p>
+                        </div>
+                    </div>
+                    <div className=''>
+                        <button className='bg-[#DBE9FE] px-4 py-2 rounded-full text-black flex items-center gap-1'>
+                            <FiPlus className='h-5 w-5' />
+                            <p>New Chat</p>
+                        </button>
+                    </div>
+                    <div className='flex flex-col gap-2'>
+                        <h6 className=' font-bold mb-2 px-3'>All Chats</h6>
+                        <div className='rounded-full bg-[#EFF6FF] font-medium h-10 flex items-center px-4 cursor-pointer'>Pharma</div>
+                        <div className='rounded-md  h-10 flex items-center px-4 cursor-pointer'>Chat 2</div>
+                        <div className='rounded-md  h-10 flex items-center px-4 cursor-pointer'>Chat 3</div>
+
+
                     </div>
                 </div>
-                <div className=''>
-                    <button className='bg-[#DBE9FE] px-4 py-2 rounded-full text-black flex items-center gap-1'>
-                        <FiPlus className='h-5 w-5' />
-                        <p>New Chat</p>
-                    </button>
-                </div>
-                <div className='flex flex-col gap-2'>
-                    <h6 className=' font-bold mb-2 px-3'>All Chats</h6>
-                    <div className='rounded-full bg-[#EFF6FF] font-medium h-10 flex items-center px-4 cursor-pointer'>Pharma</div>
-                    <div className='rounded-md  h-10 flex items-center px-4 cursor-pointer'>Chat 2</div>
-                    <div className='rounded-md  h-10 flex items-center px-4 cursor-pointer'>Chat 3</div>
+                {/* Chat */}
+                <div className=" w-full h-full ">
+                    <div className='w-full h-14 px-4 py-2 flex items-center justify-end gap-3'>
+                        <button onClick={() => signOut({ callbackUrl: "/login" })} className='bg-[#DBE9FE] rounded-full p-1'>
 
+                            <IoPersonCircle className='h-10 w-10' />
+                        </button>
+                    </div>
+                    <div className='w-full h-[90%] flex flex-col items-start justify-start'>
+                        <div className=' overflow-y-scroll w-full pr-3 flex justify-center gap-4'>
+                            <div className='w-3/4 flex flex-col gap-4'>
+                                {messages && messages.map((message, index) => (
+                                    <div key={index} className={`w-full items-start flex ${message.sender === 'bot' ? 'justify-start' : 'justify-end'}`}>
+                                        {message.sender == 'bot' &&
+                                            <div className='border rounded-full h-fit p-1 mt-4'>
 
-                </div>
-            </div>
-            {/* Chat */}
-            <div className=" w-full h-full ">
-                <div className='w-full h-14 px-4 py-2 flex items-center justify-end gap-3'>
-                    <IoPersonCircle className='h-10 w-10' />
-                </div>
-                <div className='w-full h-[90%] flex flex-col items-start justify-start'>
-                    <div className=' overflow-y-scroll w-full pr-3 flex justify-center gap-4'>
-                        <div className='w-3/4 flex flex-col gap-4'>
-                            {messages && messages.map((message, index) => (
-                                <div key={index} className={`w-full items-start flex ${message.sender === 'bot' ? 'justify-start' : 'justify-end'}`}>
-                                    {message.sender == 'bot' &&
-                                        <div className='border rounded-full h-fit p-1 mt-4'>
-
-                                            <Image className='border' src="/fm-bot-logo.png" alt="globe" height={20} width={20} />
+                                                <Image className='border' src="/fm-bot-logo.png" alt="globe" height={20} width={20} />
+                                            </div>
+                                        }
+                                        <div className={`p-4 flex-1 rounded-2xl w-auto ${message.sender === 'user' && 'text-[#454545] max-w-[60%] bg-[#DBE9FE]'} text-black`}>
+                                            <p>{message.message}</p>
                                         </div>
-                                    }
-                                    <div className={`p-4 flex-1 rounded-2xl w-auto ${message.sender === 'user' && 'text-[#454545] max-w-[60%] bg-[#DBE9FE]'} text-black`}>
-                                        <p>{message.message}</p>
                                     </div>
-                                </div>
-                            ))}
+                                ))}
+                            </div>
                         </div>
-                    </div>
-                    <div className='w-full flex-1 flex flex-col items-center justify-center'>
-                        {/* New chat */}
-                        <div className='w-3/4 h-full flex justify-center items-center flex-col gap-4'>
-                            {!messages && <h1 className='text-3xl'>What can I help you with today?</h1>}
-                            <form onSubmit={sendMessage} className='flex flex-col w-full rounded-2xl shadow-xl  border-[1px] px-3 py-2 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-[#888888] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50'>
-                                <input type='text' value={inputMessage?.message}
-                                    onChange={(e) => handleInputMessage(e.target.value)}
-                                    placeholder='Ask me anything'
-                                    className="flex w-full rounded-md bg-transparent px-3 py-2 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-[#888888] placeholder:text-lg focus-visible:ring-0 focus:ring-0 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50">
-                                </input>
-                                <div className='w-full h-16 flex items-center justify-end px-3'>
-                                    <button type='submit' className='bg-[#223F97] text-white rounded-full h-10 px-3 py-1'>
-                                        <IoSend />
-                                    </button>
-                                </div>
-                            </form>
+                        <div className='w-full flex-1 flex flex-col items-center justify-center'>
+                            {/* New chat */}
+                            <div className='w-3/4 h-full flex justify-center items-center flex-col gap-4'>
+                                {!messages && <h1 className='text-3xl'>What can I help you with today?</h1>}
+                                <form onSubmit={sendMessage} className='flex flex-col w-full rounded-2xl shadow-xl  border-[1px] px-3 py-2 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-[#888888] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50'>
+                                    <input type='text' value={inputMessage?.message}
+                                        onChange={(e) => handleInputMessage(e.target.value)}
+                                        placeholder='Ask me anything'
+                                        className="flex w-full rounded-md bg-transparent px-3 py-2 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-[#888888] placeholder:text-lg focus-visible:ring-0 focus:ring-0 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50">
+                                    </input>
+                                    <div className='w-full h-16 flex items-center justify-end px-3'>
+                                        <button type='submit' className='bg-[#223F97] text-white rounded-full h-10 px-3 py-1'>
+                                            <IoSend />
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </>}
         </div>
     )
 }
