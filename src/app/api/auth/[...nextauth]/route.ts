@@ -22,43 +22,44 @@ export const authOptions: NextAuthOptions = {
             const { name, email } = token!;
             const first_name = name?.split(" ")[0]
             const last_name = name?.split(" ")[1]
-            
-            try {
-            const res = await fetch(process.env.BACKEND_URL + "/generate_tokens", {
-                method: "POST",
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    first_name: first_name,
-                    last_name: last_name,
-                    email_id: email
-                })
-            })
+            const cookieStore = await cookies()
+            if (!cookieStore.get("refresh_token")) {
+                try {
+                    const res = await fetch(process.env.NEXT_PUBLIC_BACKEND_URL + "/generate_tokens", {
+                        method: "POST",
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            first_name: first_name,
+                            last_name: last_name,
+                            email_id: email
+                        })
+                    })
 
-            // console.log("Response from backend", res)
-
-            if (res.ok) {
-                const data = await res.json()
-                const cookieStore = await cookies()
-                cookieStore.set("access_token", data.access_token, {
-                    maxAge: 60 * 30,
-                    httpOnly: true,
-                    path: '/',
-                })
-                cookieStore.set("refresh_token", data.refresh_token,
-                    {
-                        maxAge: 60 * 60 * 24 * 30,
-                        httpOnly: true,
-                        path: '/',
+                    if (res.ok) {
+                        const data = await res.json()
+                        cookieStore.set("access_token", data.access_token, {
+                            maxAge: 60 * 30,
+                            // httpOnly: true,
+                            path: '/',
+                            secure: true
+                        })
+                        cookieStore.set("refresh_token", data.refresh_token,
+                            {
+                                maxAge: 60 * 60 * 24 * 7,
+                                // httpOnly: true,
+                                path: '/',
+                                secure: true
+                            }
+                        )
+                    } else {
+                        throw new Error("Failed to generate tokens")
                     }
-                )
-            } else {
-                throw new Error("Failed to generate tokens")
+                } catch (error) {
+                    console.log(error)
+                }
             }
-        } catch (error) {
-            console.log(error)
-        }
 
             if (account) {
                 token.accessToken = account.access_token;
