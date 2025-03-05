@@ -3,36 +3,41 @@
 import React from "react";
 import Image from "next/image";
 import { signIn, useSession } from "next-auth/react";
+import { redirect } from "next/navigation";
 
 export default function LoginPage(): React.ReactElement {
   const [loginUrl, setLoginUrl] = React.useState<string>("")
   
   const {data :session} = useSession()
 
-  const handleLogin  = async ()  => {
-    try {
-      await fetch("https://app-dev-1002487456463.asia-south1.run.app/login",{
-        method: 'GET'
-      })
-      .then((res)=>{
-        if(res.status === 200){
-          console.log("Login Successful")
-          return res.json()
-        } else {
-          throw new Error("Login Failed")
-        }
-      }).then((data)=>{
-        console.log(data)
-        window.location = data.auth_url;
-      })
-      .catch((err)=>{
-        console.error(err)
-      }
-      )
-    } catch (error) {
-      console.error("Login Failed,", error)
-    }
+  if(session){
+    redirect("/chat")
   }
+
+  // const handleLogin  = async ()  => {
+  //   try {
+  //     await fetch("https://app-dev-1002487456463.asia-south1.run.app/login",{
+  //       method: 'GET'
+  //     })
+  //     .then((res)=>{
+  //       if(res.status === 200){
+  //         console.log("Login Successful")
+  //         return res.json()
+  //       } else {
+  //         throw new Error("Login Failed")
+  //       }
+  //     }).then((data)=>{
+  //       console.log(data)
+  //       window.location = data.auth_url;
+  //     })
+  //     .catch((err)=>{
+  //       console.error(err)
+  //     }
+  //     )
+  //   } catch (error) {
+  //     console.error("Login Failed,", error)
+  //   }
+  // }
 
   const handleSignIn = async () => {
     try {
