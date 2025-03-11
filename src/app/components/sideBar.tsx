@@ -92,7 +92,7 @@ export default function sideBar({
                 <div className='w-full h-14 flex items-center gap-3'>
                     <div className='px-4 flex items-center gap-3'>
                         <GiHamburgerMenu className='h-6 w-6' />
-                        <p className='text-2xl'>FM AI</p>
+                        <p className='text-2xl'>FM AuI</p>
                     </div>
                 </div>
                 <div className=''>

@@ -28,91 +28,97 @@ export default function ChatPage(): React.ReactElement {
 
 
 
-    const generateConversationId = async (access_token: string) => {
-        try {
-            const newConversationId = await fetch(process.env.NEXT_PUBLIC_BACKEND_URL + `/start_new_conversation`, {
-                method: "GET",
-                headers: {
-                    "authorization": `Bearer ${access_token}`,
-                }
-            })
+    // const generateConversationId = async (access_token: string) => {
+    //     try {
+    //         const newConversationId = await fetch(process.env.NEXT_PUBLIC_BACKEND_URL + `/start_new_conversation`, {
+    //             method: "GET",
+    //             headers: {
+    //                 "authorization": `Bearer ${access_token}`,
+    //             }
+    //         })
 
-            if (!newConversationId.ok) {
-                throw new Error(`Failed to get a response. Status : ${newConversationId.status}`)
-            }
+    //         if (!newConversationId.ok) {
+    //             throw new Error(`Failed to get a response. Status : ${newConversationId.status}`)
+    //         }
 
-            const data = await newConversationId.json();
-            console.log("Conversation Id ==> ", data.conversation_id)
-            setConversationId(data.conversation_id)
-            return { success: true, data: data.conversation_id }
-        }
-        catch (error) {
-            console.log("Failed to generate conversation ID", error)
-            return { success: false, data: error }
-        }
-    }
-
+    //         const data = await newConversationId.json();
+    //         console.log("Conversation Id ==> ", data.conversation_id)
+    //         setConversationId(data.conversation_id)
+    //         return { success: true, data: data.conversation_id }
+    //     }
+    //     catch (error) {
+    //         console.log("Failed to generate conversation ID", error)
+    //         return { success: false, data: error }
+    //     }
+    // }
     const sendMessage = async (e: React.SyntheticEvent) => {
         e.preventDefault()
-        const cookies = document.cookie.split(';')
-        let access_token = cookies.find(cookie => cookie.includes('access_token'))?.split('=')[1]
-        if (!access_token) {
-            const response = await fetch("/api/auth/refresh", {
-                credentials: "include"
-            })
-            const data = await response.json()
-            access_token = data.accessToken;
-        }
-        // if (inputMessage?.message.trim() && socket) {
-        //     socket.emit('chat message', inputMessage)
-        //     if (inputMessage) setMessages((prevMessages: Message[]) => [...prevMessages, inputMessage])
-        //     setInputMessage({ message: "", sender: "" })
-        // }
-        // await fetch('/api/dummy', {
-        //     method: 'GET',
-        // })
-        //     .then(res => res.json())
-        //     .then(data => {
-        //         setMessages(data)
-        //     })
-        if (!inputMessage) return;
-        let cid;
-        if (access_token)
-            cid = await generateConversationId(access_token);
-        setMessages((prev) => [...prev, inputMessage])
-
-        if (cid?.data) {
-            try {
-                const responseMessage = await fetch(process.env.NEXT_PUBLIC_BACKEND_URL + `/send_message_sse?message=${encodeURIComponent(inputMessage.message)}&conversation_id=${cid.data}
-`, {
-                    method: "GET",
-                    headers: {
-                        authorization: `Bearer ${access_token}`,
-                        "content-type": "application/json"
-                    }
-                })
-
-                if (!responseMessage.ok) {
-                    throw new Error(`Failed to get a response message. Status : ${responseMessage.status}`)
-                }
-
-                const data = await responseMessage.json();
-                console.log(data);
-            }
-            catch (error) {
-                console.log(error)
-            }
-        }
+        const response = await fetch("/api/dummy");
+        const data = await response.json();
+        setMessages(data)
     }
 
-    const handleInputMessage = (message: string) => {
-        const inputMessage: Message = {
-            'message': message,
-            'sender': 'user'
-        }
-        setInputMessage(inputMessage);
-        // setMessages(messages => [...messages, inputMessage])
-    }
+    //     const sendMessage = async (e: React.SyntheticEvent) => {
+    //         e.preventDefault()
+    //         const cookies = document.cookie.split(';')
+    //         let access_token = cookies.find(cookie => cookie.includes('access_token'))?.split('=')[1]
+    //         if (!access_token) {
+    //             const response = await fetch("/api/auth/refresh", {
+    //                 credentials: "include"
+    //             })
+    //             const data = await response.json()
+    //             access_token = data.accessToken;
+    //         }
+    //         // if (inputMessage?.message.trim() && socket) {
+    //         //     socket.emit('chat message', inputMessage)
+    //         //     if (inputMessage) setMessages((prevMessages: Message[]) => [...prevMessages, inputMessage])
+    //         //     setInputMessage({ message: "", sender: "" })
+    //         // }
+    //         // await fetch('/api/dummy', {
+    //         //     method: 'GET',
+    //         // })
+    //         //     .then(res => res.json())
+    //         //     .then(data => {
+    //         //         setMessages(data)
+    //         //     })
+    //         if (!inputMessage) return;
+    //         let cid;
+    //         if (access_token)
+    //             cid = await generateConversationId(access_token);
+    //         setMessages((prev) => [...prev, inputMessage])
+
+    //         if (cid?.data) {
+    //             try {
+    //                 const responseMessage = await fetch(process.env.NEXT_PUBLIC_BACKEND_URL + `/send_message_sse?message=${encodeURIComponent(inputMessage.message)}&conversation_id=${cid.data}
+    // `, {
+    //                     method: "GET",
+    //                     headers: {
+    //                         authorization: `Bearer ${access_token}`,
+    //                         "content-type": "application/json"
+    //                     }
+    //                 })
+
+    //                 if (!responseMessage.ok) {
+    //                     throw new Error(`Failed to get a response message. Status : ${responseMessage.status}`)
+    //                 }
+
+    //                 const data = await responseMessage.json();
+    //                 console.log(data);
+    //             }
+    //             catch (error) {
+    //                 console.log(error)
+    //             }
+    //         }
+    //     }
+
+    // const handleInputMessage = (message: string) => {
+    //     const inputMessage: Message = {
+    //         'message': message,
+    //         'sender': 'user'
+    //     }
+    //     setInputMessage(inputMessage);
+    //     // setMessages(messages => [...messages, inputMessage])
+    // }
 
     return (
 
@@ -121,7 +127,7 @@ export default function ChatPage(): React.ReactElement {
             {status === 'authenticated' &&
                 <>
                     {/* Side bar */}
-                    <div className="w-[360px] shadow-xl h-full px-3 flex flex-col gap-4">
+                    {/* <div className="w-[360px] shadow-xl h-full px-3 flex flex-col gap-4">
                         <div className='w-full h-14 flex items-center gap-3'>
                             <div className='px-4 flex items-center gap-3'>
                                 <GiHamburgerMenu className='h-6 w-6' />
@@ -142,7 +148,7 @@ export default function ChatPage(): React.ReactElement {
 
 
                         </div>
-                    </div>
+                    </div> */}
                     {/* Chat */}
                     <div className=" w-full h-full ">
                         <div className='w-full h-14 px-4 py-2 flex items-center justify-end gap-3'>
@@ -170,12 +176,12 @@ export default function ChatPage(): React.ReactElement {
                             </div>
                             <div className='w-full flex-1 flex flex-col items-center justify-center'>
                                 {/* New chat */}
-                                <div className='w-3/4 h-full flex justify-center items-center flex-col gap-4'>
+                                <div className='w-3/4 h-full flex flex-col justify-end gap-4'>
                                     {!messages && <h1 className='text-3xl'>What can I help you with today?</h1>}
-                                    <form onSubmit={sendMessage} className='flex flex-col w-full rounded-2xl shadow-xl  border-[1px] px-3 py-2 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-[#888888] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50'>
+                                    <form onSubmit={sendMessage} className='justify-self-end self-end flex flex-col w-full rounded-2xl shadow-xl  border-[1px] px-3 py-2 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-[#888888] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50'>
                                         <textarea value={inputMessage?.message}
-                                            onChange={(e) => handleInputMessage(e.target.value)}
-                                            placeholder='Ask me anything'
+                                            // onChange={(e) => handleInputMessage(e.target.value)}
+                                            placeholder='Ask me anythasdfing'
                                             className="flex w-full rounded-md bg-transparent px-3 py-2 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-[#888888] placeholder:text-lg focus-visible:ring-0 focus:ring-0 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50">
                                         </textarea>
                                         <div className='w-full h-16 flex items-center justify-end px-3'>

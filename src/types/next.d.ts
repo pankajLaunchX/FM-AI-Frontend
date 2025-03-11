@@ -12,5 +12,7 @@ export type NextApiResponseServerIO = NextApiResponse & {
 
 export type Message= {
   message : string,
-  sender : string
+  sender : string,
+  links? : string[]
 }
+

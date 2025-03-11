@@ -13,6 +13,7 @@ import { redirect, useRouter } from 'next/navigation';
 import { get } from 'http';
 import { sign } from 'crypto';
 import { useAuthStore } from '../store/useAuthStore';
+import Link from 'next/link';
 
 // let socket: SocketIOClient.Socket
 export default function ChatPage() {
@@ -29,12 +30,18 @@ export default function ChatPage() {
     const [conversations, setConversations] = useState<Array<string>>([])
     const [refreshToken, setRefreshToken] = useState<string>("")
     const { refreshAccessToken, accessToken } = useAuthStore();
+    const [isStreaming, setIsStreaming] = useState<boolean>(false)
 
     useEffect(() => {
         if (status === 'unauthenticated') {
             redirect('/login')
         }
     }, [status])
+
+    useEffect(() => {
+        if (outputMessage.message)
+            setMessages(prev => ([...prev, outputMessage]))
+    }, [isStreaming])
 
 
 
@@ -87,35 +94,64 @@ export default function ChatPage() {
         //     })
         setOutputMessage({ message: "", sender: "bot" });
         if (!inputMessage) return;
-        let cid = "44f118cb-3c1b-43d2-be94-590bc0d2b5ae"
+        let cid = "93e58291-a5de-4c4c-8373-123cd7c46d20"
         if (access_token)
             // cid = await generateConversationId(access_token);
             setMessages((prev) => [...prev, inputMessage])
-
+        setIsStreaming(true)
         const eventSource = new EventSource(process.env.NEXT_PUBLIC_BACKEND_URL + `/send_message_sse?message=${encodeURIComponent(inputMessage.message)}&conversation_id=${cid}&access_token=${access_token}`)
         let msg = ""
+
         eventSource.onmessage = (event) => {
+            // console.log(event.data)
             const newChunk = JSON.parse(event.data).response; // Parse JSON response
             msg += newChunk
-            setOutputMessage((prev) => ({
-                ...prev,
-                message: prev.message + " " + newChunk  // Append new chunk
-            }));
+            const urlMatch = newChunk.match(/https?:\/\/[^\s]+/);
+            if (urlMatch) {
+                const fullUrl = urlMatch[0];
+
+                // Shorten link for display
+
+
+                setOutputMessage((prev) => ({
+                    ...prev,
+                    links: [...(prev.links ?? []), fullUrl]
+                }))
+
+            } else {
+                setOutputMessage((prev) => ({
+                    ...prev,
+                    sender: "bot",
+                    message: prev.message + " " + newChunk
+                }))
+            }
+            // setOutputMessage((prev) => ({
+            //     ...prev,
+            //     sender: "bot",
+            //     message: prev.message +  " " + newChunk
+            // })
+            // )
         };
 
+        if (msg.includes("Sources: ")) {
+            const sources = msg.split("Sources: ")[1];
+            console.log(sources.split(","))
+        }
+
         eventSource.onerror = () => {
-            setMessages((prev) => [...prev, { sender : "bot", message : msg }]); // Add bot response to chat
             console.error("SSE Error");
             eventSource.close();
+            setIsStreaming(false)
         };
 
         eventSource.addEventListener("end", () => {
-            setMessages((prev) => [...prev, { sender : "bot", message : msg }]); // Add bot response to chat
             eventSource.close();
+            setIsStreaming(false)
         });
 
         // Clear input field
         setInputMessage({ message: "", sender: "user" });
+        setOutputMessage({ message: "", sender: "bot" });
 
         // try {
         //     const responseMessage = await fetch(process.env.NEXT_PUBLIC_BACKEND_URL + `/send_message_sse?message=${encodeURIComponent(inputMessage.message)}&conversation_id=${cid}&access_token=${access_token}
@@ -163,6 +199,7 @@ export default function ChatPage() {
                             <div className='w-3/4 flex flex-col gap-4'>
                                 {messages && messages.map((message, index) => (
                                     <div key={index} className={`w-full items-start flex ${message.sender === 'bot' ? 'justify-start' : 'justify-end'}`}>
+
                                         {message.sender == 'bot' &&
                                             <div className='border rounded-full h-fit p-1 mt-4'>
 
@@ -170,16 +207,39 @@ export default function ChatPage() {
                                             </div>
                                         }
                                         <div className={`p-4 flex-1 rounded-2xl w-auto ${message.sender === 'user' && 'text-[#454545] max-w-[60%] bg-[#DBE9FE]'} text-black`}>
-                                            <p>{message.message}</p>
+                                            <p className='whitespace-break-spaces'>{message.message}</p>
+                                            <div className='my-5'>
+                                                {message.links && message.links.length > 0 &&
+                                                    message.links.map((link, ind) => {
+                                                        return (<Link className='text-blue-600' href={link} key={ind}>
+                                                            {ind + 1 + ". "}{link.length > 100 ? `${link.slice(0, 70)}...` : link}
+                                                        </Link>)
+                                                    })
+                                                }
+                                            </div>
                                         </div>
                                     </div>
                                 ))}
+                                {/* the generating code */}
+                                {
+                                    isStreaming &&
+                                    <div className={`w-full items-start flex justify-start`}>
+                                        <div className='border rounded-full h-fit p-1 mt-4'>
+                                            <Image className='border' src="/fm-bot-logo.png" alt="globe" height={20} width={20} />
+                                        </div>
+                                        <div className={`p-4 flex-1 rounded-2xl w-auto text-black`}>
+                                            {/* <p>{outputMessage.message}</p> */}
+                                            Generating
+                                        </div>
+                                    </div>
+
+                                }
                             </div>
                         </div>
                         <div className='w-full flex-1 flex flex-col items-center justify-center'>
                             {/* New chat */}
                             <div className='w-3/4 h-full flex justify-center items-center flex-col gap-4'>
-                                {!messages && <h1 className='text-3xl'>What can I help you with today?</h1>}
+                                {messages.length == 0 && <h1 className='text-3xl'>What can I help you with today?</h1>}
                                 <form onSubmit={sendMessage} className='flex flex-col w-full rounded-2xl shadow-xl  border-[1px] px-3 py-2 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-[#888888] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50'>
                                     <textarea value={inputMessage?.message}
                                         onChange={(e) => handleInputMessage(e.target.value)}
