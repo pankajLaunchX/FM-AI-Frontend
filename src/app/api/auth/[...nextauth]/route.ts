@@ -40,7 +40,7 @@ export const authOptions: NextAuthOptions = {
                     if (res.ok) {
                         const data = await res.json()
                         cookieStore.set("access_token", data.access_token, {
-                            maxAge: 60 * 30,
+                            maxAge: 60 * 15,
                             // httpOnly: true,
                             path: '/',
                             secure: true

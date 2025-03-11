@@ -4,13 +4,14 @@ import React from "react";
 import Image from "next/image";
 import { signIn, useSession } from "next-auth/react";
 import { redirect } from "next/navigation";
+import styles from "./login.module.css";
 
 export default function LoginPage(): React.ReactElement {
   const [loginUrl, setLoginUrl] = React.useState<string>("")
-  
-  const {data :session} = useSession()
 
-  if(session){
+  const { data: session } = useSession()
+
+  if (session) {
     redirect("/chat")
   }
 
@@ -49,27 +50,32 @@ export default function LoginPage(): React.ReactElement {
   }
 
   return (
-    <div className="h-screen w-full flex">
-      <div className="w-1/2 flex justify-center items-center bg-gradient-to-r from-[#041759] to-[#02081E]">
-        Carousel
+    <div className={styles.fullPage}>
+      <div className={styles.carouselSide}>
+        <div className="w-full h-full flex justify-center items-end bottom-0">
+          <Image className="rounded-2xl" src="/login/wave.png" alt="FM wave" height={500} width={1000} />
+        </div>
+        {/* <div>
+          Carousel
+        </div> */}
       </div>
-      <div className="w-1/2 flex flex-col justify-center items-center bg-[#02081E]">
+      <div className={styles.loginSide}>
         <div className="w-3/4 flex flex-col justify-center items-center gap-8">
           <div className="flex flex-col items-center">
             <h1 className="text-3xl">Hi I'm <strong>FM AI</strong>,</h1>
             <h1 className="text-3xl">Your personal sales coach.</h1>
           </div>
-          <button className="w-1/2 bg-[#223F97] text-white font-bold p-2 rounded-full">
+          <button onClick={handleSignIn} className="w-1/2 bg-[#223F97] text-white font-bold p-2 rounded-full">
             <div className="flex items-center gap-2">
               <div className="bg-white rounded-full p-1">
                 <Image src="/google.png" alt="Google Logo" width={24} height={24} />
               </div>
-              <span onClick={handleSignIn} className="w-full font-normal">Login with Google</span>
+              <span className="w-full font-normal">Login with Google</span>
             </div>
           </button>
         </div>
         <div className="bottom-20 absolute p-4">
-          <Image src="/fm-logo-white.png" alt="FM AI Logo" width={150} height={50} />
+          <Image src="/fm-logo-blue.png" alt="FM AI Logo" width={150} height={50} />
         </div>
       </div>
     </div>

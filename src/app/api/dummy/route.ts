@@ -1,7 +1,5 @@
 import { Message } from "@/types/next";
 
-
-
 export async function GET() {
     const conversation: Message[] = [
         {
