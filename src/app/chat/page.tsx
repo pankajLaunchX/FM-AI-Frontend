@@ -20,7 +20,7 @@ export default function ChatPage() {
     const [inputMessage, setInputMessage] = useState<Message>()
     const [outputMessage, setOutputMessage] = useState<Message>({
         message: "",
-        sender: "bot"
+        message_type: "bot"
     })
     const [messages, setMessages] = useState<Message[]>([])
     // const [accessToken, setAccessToken] = useState<string>("")
@@ -42,8 +42,6 @@ export default function ChatPage() {
         if (outputMessage.message)
             setMessages(prev => ([...prev, outputMessage]))
     }, [isStreaming])
-
-
 
     const generateConversationId = async (access_token: string) => {
         try {
@@ -83,7 +81,7 @@ export default function ChatPage() {
         // if (inputMessage?.message.trim() && socket) {
         //     socket.emit('chat message', inputMessage)
         //     if (inputMessage) setMessages((prevMessages: Message[]) => [...prevMessages, inputMessage])
-        //     setInputMessage({ message: "", sender: "" })
+        //     setInputMessage({ message: "", message_type: "" })
         // }
         // await fetch('/api/dummy', {
         //     method: 'GET',
@@ -92,14 +90,14 @@ export default function ChatPage() {
         //     .then(data => {
         //         setMessages(data)
         //     })
-        setOutputMessage({ message: "", sender: "bot" });
+        setOutputMessage({ message: "", message_type: "bot" });
         if (!inputMessage) return;
-        let cid = "93e58291-a5de-4c4c-8373-123cd7c46d20"
+        let cid ;
         if (access_token)
-            // cid = await generateConversationId(access_token);
+            cid = await generateConversationId(access_token);
             setMessages((prev) => [...prev, inputMessage])
         setIsStreaming(true)
-        const eventSource = new EventSource(process.env.NEXT_PUBLIC_BACKEND_URL + `/send_message_sse?message=${encodeURIComponent(inputMessage.message)}&conversation_id=${cid}&access_token=${access_token}`)
+        const eventSource = new EventSource(process.env.NEXT_PUBLIC_BACKEND_URL + `/send_message_sse?message=${encodeURIComponent(inputMessage.message)}&conversation_id=${cid?.data}&access_token=${access_token}`)
         let msg = ""
 
         eventSource.onmessage = (event) => {
@@ -110,9 +108,6 @@ export default function ChatPage() {
             if (urlMatch) {
                 const fullUrl = urlMatch[0];
 
-                // Shorten link for display
-
-
                 setOutputMessage((prev) => ({
                     ...prev,
                     links: [...(prev.links ?? []), fullUrl]
@@ -121,13 +116,13 @@ export default function ChatPage() {
             } else {
                 setOutputMessage((prev) => ({
                     ...prev,
-                    sender: "bot",
+                    message_type: "bot",
                     message: prev.message + " " + newChunk
                 }))
             }
             // setOutputMessage((prev) => ({
             //     ...prev,
-            //     sender: "bot",
+            //     message_type: "bot",
             //     message: prev.message +  " " + newChunk
             // })
             // )
@@ -150,8 +145,8 @@ export default function ChatPage() {
         });
 
         // Clear input field
-        setInputMessage({ message: "", sender: "user" });
-        setOutputMessage({ message: "", sender: "bot" });
+        setInputMessage({ message: "", message_type: "user" });
+        setOutputMessage({ message: "", message_type: "bot" });
 
         // try {
         //     const responseMessage = await fetch(process.env.NEXT_PUBLIC_BACKEND_URL + `/send_message_sse?message=${encodeURIComponent(inputMessage.message)}&conversation_id=${cid}&access_token=${access_token}
@@ -177,7 +172,7 @@ export default function ChatPage() {
     const handleInputMessage = (message: string) => {
         const inputMessage: Message = {
             'message': message,
-            'sender': 'user'
+            'message_type': 'user'
         }
         setInputMessage(inputMessage);
         // setMessages(messages => [...messages, inputMessage])
@@ -198,25 +193,25 @@ export default function ChatPage() {
                         <div className=' overflow-y-scroll w-full pr-3 flex justify-center gap-4'>
                             <div className='w-3/4 flex flex-col gap-4'>
                                 {messages && messages.map((message, index) => (
-                                    <div key={index} className={`w-full items-start flex ${message.sender === 'bot' ? 'justify-start' : 'justify-end'}`}>
+                                    <div key={index} className={`w-full items-start flex ${message.message_type === 'bot' ? 'justify-start' : 'justify-end'}`}>
 
-                                        {message.sender == 'bot' &&
+                                        {message.message_type == 'bot' &&
                                             <div className='border rounded-full h-fit p-1 mt-4'>
 
                                                 <Image className='border' src="/fm-bot-logo.png" alt="globe" height={20} width={20} />
                                             </div>
                                         }
-                                        <div className={`p-4 flex-1 rounded-2xl w-auto ${message.sender === 'user' && 'text-[#454545] max-w-[60%] bg-[#DBE9FE]'} text-black`}>
+                                        <div className={`p-4 flex-1 rounded-2xl w-auto ${message.message_type === 'user' && 'text-[#454545] max-w-[60%] bg-[#DBE9FE]'} text-black`}>
                                             <p className='whitespace-break-spaces'>{message.message}</p>
-                                            <div className='my-5'>
-                                                {message.links && message.links.length > 0 &&
-                                                    message.links.map((link, ind) => {
+                                            {message.links && message.links.length > 0 &&
+                                                <div className='my-5'>
+                                                    {message.links.map((link, ind) => {
                                                         return (<Link className='text-blue-600' href={link} key={ind}>
                                                             {ind + 1 + ". "}{link.length > 100 ? `${link.slice(0, 70)}...` : link}
                                                         </Link>)
-                                                    })
-                                                }
-                                            </div>
+                                                    })}
+                                                </div>
+                                            }
                                         </div>
                                     </div>
                                 ))}

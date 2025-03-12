@@ -10,9 +10,13 @@ export type NextApiResponseServerIO = NextApiResponse & {
   }
 }
 
-export type Message= {
-  message : string,
-  sender : string,
-  links? : string[]
+export type Message = {
+  message: string,
+  message_type: string,
+  links?: string[]
+}
+
+export type Chat = {
+  conversation_id: string
 }
 

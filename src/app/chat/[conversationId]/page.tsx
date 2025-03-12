@@ -11,21 +11,67 @@ import { useSession } from 'next-auth/react';
 import { redirect, useParams, useRouter } from 'next/navigation';
 import { get } from 'http';
 import { sign } from 'crypto';
-
+import Link from 'next/link';
 
 // let socket: SocketIOClient.Socket
 export default function ChatPage(): React.ReactElement {
     const [messages, setMessages] = useState<Message[]>([])
     const [inputMessage, setInputMessage] = useState<Message>()
+    const [outputMessage, setOutputMessage] = useState<Message>(
+        {
+            message: "",
+            message_type: "bot"
+        }
+    )
     const { data: session, status } = useSession()
     const router = useRouter()
     const [conversations, setConversations] = useState<Array<string>>([])
     const [refreshToken, setRefreshToken] = useState<string>("")
     const params = useParams();
-    // const {conversationId} = params;
+    const { conversationId } = params;
     const [accessToken, setAccessToken] = useState<string>("")
-    const [conversationId, setConversationId] = useState<string>("")
+    const [isStreaming, setIsStreaming] = useState<boolean>(false)
+    // const [conversationId, setConversationId] = useState<string>("")
+    // console.log(conversationId)
 
+    useEffect(() => {
+        const fetchConversation = async () => {
+            const response = await fetch('/api/conversation', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ conversation_id: conversationId })
+            })
+
+            const data = await response.json();
+            const fetchedMessages = data.messages.map((message: any) => {
+                if (message.message_type === 'user') {
+                    return message
+                }
+                const cleanedMessage = message.message.replace(/https?:\/\/[^\s]+/g, '');
+                const urls = message.message.match(/(https?:\/\/[^\s]+)/g);
+                return {
+                    ...message,
+                    message: cleanedMessage,
+                    links: urls
+                }
+            })
+            setMessages(fetchedMessages)
+        }
+
+        fetchConversation()
+    }, [isStreaming])
+
+    useEffect(() => {
+        const parsedOutputMessage = outputMessage.message.replace(/https?:\/\/[^\s]+/g, '');
+        const parsedUrls = outputMessage.message.match(/(https?:\/\/[^\s]+)/g);
+        outputMessage.message = parsedOutputMessage;
+        if (parsedUrls) {
+            outputMessage.links = parsedUrls;
+        }
+        setMessages((prev) => [...prev, outputMessage])
+    }, [outputMessage])
 
 
     // const generateConversationId = async (access_token: string) => {
@@ -51,74 +97,92 @@ export default function ChatPage(): React.ReactElement {
     //         return { success: false, data: error }
     //     }
     // }
+    // const sendMessage = async (e: React.SyntheticEvent) => {
+    //     e.preventDefault()
+    //     const response = await fetch("/api/dummy");
+    //     const data = await response.json();
+    //     setMessages(data)
+    // }
+
     const sendMessage = async (e: React.SyntheticEvent) => {
         e.preventDefault()
-        const response = await fetch("/api/dummy");
-        const data = await response.json();
-        setMessages(data)
+        const cookies = document.cookie.split(';')
+        let access_token = cookies.find(cookie => cookie.includes('access_token'))?.split('=')[1]
+        if (!access_token) {
+            const response = await fetch("/api/auth/refresh", {
+                credentials: "include"
+            })
+            const data = await response.json()
+            access_token = data.accessToken;
+        }
+        // if (inputMessage?.message.trim() && socket) {
+        //     socket.emit('chat message', inputMessage)
+        //     if (inputMessage) setMessages((prevMessages: Message[]) => [...prevMessages, inputMessage])
+        //     setInputMessage({ message: "", sender: "" })
+        // }
+        // await fetch('/api/dummy', {
+        //     method: 'GET',
+        // })
+        //     .then(res => res.json())
+        //     .then(data => {
+        //         setMessages(data)
+        //     })
+        setOutputMessage({ message: "", message_type: "bot" });
+        if (!inputMessage) return;
+        if (access_token)
+            // cid = await generateConversationId(access_token);
+            setMessages((prev) => [...prev, inputMessage])
+    
+        if (access_token) {
+            setMessages((prev) => [...prev, inputMessage])
+            setIsStreaming(true)
+            const eventSource = new EventSource(process.env.NEXT_PUBLIC_BACKEND_URL + `/send_message_sse?message=${encodeURIComponent(inputMessage.message)}&conversation_id=${conversationId}&access_token=${access_token}`)
+            let msg = ""
+
+            eventSource.onmessage = (event) => {
+                // console.log(event.data)
+                const newChunk = JSON.parse(event.data).response; // Parse JSON response
+                msg += newChunk
+                const urlMatch = newChunk.match(/https?:\/\/[^\s]+/);
+
+                setOutputMessage((prev) => ({
+                    ...prev,
+                    message_type: "bot",
+                    message: prev.message + " " + newChunk
+                }))
+                // setOutputMessage((prev) => ({
+                //     ...prev,
+                //     message_type: "bot",
+                //     message: prev.message +  " " + newChunk
+                // })
+                // )
+            };
+
+            eventSource.onerror = () => {
+                console.error("SSE Error");
+                eventSource.close();
+                setIsStreaming(false)
+            };
+
+            eventSource.addEventListener("end", () => {
+                eventSource.close();
+                setIsStreaming(false)
+            });
+
+            // Clear input field
+            setInputMessage({ message: "", message_type: "user" });
+            setOutputMessage({ message: "", message_type: "bot" });
+        }
     }
 
-    //     const sendMessage = async (e: React.SyntheticEvent) => {
-    //         e.preventDefault()
-    //         const cookies = document.cookie.split(';')
-    //         let access_token = cookies.find(cookie => cookie.includes('access_token'))?.split('=')[1]
-    //         if (!access_token) {
-    //             const response = await fetch("/api/auth/refresh", {
-    //                 credentials: "include"
-    //             })
-    //             const data = await response.json()
-    //             access_token = data.accessToken;
-    //         }
-    //         // if (inputMessage?.message.trim() && socket) {
-    //         //     socket.emit('chat message', inputMessage)
-    //         //     if (inputMessage) setMessages((prevMessages: Message[]) => [...prevMessages, inputMessage])
-    //         //     setInputMessage({ message: "", sender: "" })
-    //         // }
-    //         // await fetch('/api/dummy', {
-    //         //     method: 'GET',
-    //         // })
-    //         //     .then(res => res.json())
-    //         //     .then(data => {
-    //         //         setMessages(data)
-    //         //     })
-    //         if (!inputMessage) return;
-    //         let cid;
-    //         if (access_token)
-    //             cid = await generateConversationId(access_token);
-    //         setMessages((prev) => [...prev, inputMessage])
-
-    //         if (cid?.data) {
-    //             try {
-    //                 const responseMessage = await fetch(process.env.NEXT_PUBLIC_BACKEND_URL + `/send_message_sse?message=${encodeURIComponent(inputMessage.message)}&conversation_id=${cid.data}
-    // `, {
-    //                     method: "GET",
-    //                     headers: {
-    //                         authorization: `Bearer ${access_token}`,
-    //                         "content-type": "application/json"
-    //                     }
-    //                 })
-
-    //                 if (!responseMessage.ok) {
-    //                     throw new Error(`Failed to get a response message. Status : ${responseMessage.status}`)
-    //                 }
-
-    //                 const data = await responseMessage.json();
-    //                 console.log(data);
-    //             }
-    //             catch (error) {
-    //                 console.log(error)
-    //             }
-    //         }
-    //     }
-
-    // const handleInputMessage = (message: string) => {
-    //     const inputMessage: Message = {
-    //         'message': message,
-    //         'sender': 'user'
-    //     }
-    //     setInputMessage(inputMessage);
-    //     // setMessages(messages => [...messages, inputMessage])
-    // }
+    const handleInputMessage = (message: string) => {
+        const inputMessage: Message = {
+            'message': message,
+            'message_type': 'user'
+        }
+        setInputMessage(inputMessage);
+        // setMessages(messages => [...messages, inputMessage])
+    }
 
     return (
 
@@ -159,19 +223,46 @@ export default function ChatPage(): React.ReactElement {
                         <div className='w-full h-[90%] flex flex-col items-start justify-start'>
                             <div className=' overflow-y-scroll w-full pr-3 flex justify-center gap-4'>
                                 <div className='w-3/4 flex flex-col gap-4'>
-                                    {messages && messages.map((message, index) => (
-                                        <div key={index} className={`w-full items-start flex ${message.sender === 'bot' ? 'justify-start' : 'justify-end'}`}>
-                                            {message.sender == 'bot' &&
-                                                <div className='border rounded-full h-fit p-1 mt-4'>
-
-                                                    <Image className='border' src="/fm-bot-logo.png" alt="globe" height={20} width={20} />
+                                    {messages && messages.map((message, index) => {
+                                        if (message.message_type === 'system') {
+                                            return;
+                                        }
+                                        return (
+                                            <div key={index} className={`w-full items-start flex ${message.message_type === 'bot' ? 'justify-start' : 'justify-end'}`}>
+                                                {message.message_type == 'bot' &&
+                                                    <div className='border rounded-full h-fit p-1 mt-4'>
+                                                        <Image className='border' src="/fm-bot-logo.png" alt="globe" height={20} width={20} />
+                                                    </div>
+                                                }
+                                                <div className={`p-4 flex-1 rounded-2xl w-auto ${message.message_type === 'user' && 'text-[#454545] max-w-[60%] bg-[#DBE9FE]'} text-black`}>
+                                                    <p className='whitespace-break-spaces'>{message.message}</p>
+                                                    {message.links && message.links.length > 0 &&
+                                                        <div className='my-5 flex flex-col gap-2'>
+                                                            {message.links.map((link, ind) => {
+                                                                return (<Link className='text-blue-600' href={link} key={ind}>
+                                                                    {ind + 1 + ". "}{link.length > 100 ? `${link.slice(0, 70)}...` : link}
+                                                                </Link>)
+                                                            })}
+                                                        </div>
+                                                    }
                                                 </div>
-                                            }
-                                            <div className={`p-4 flex-1 rounded-2xl w-auto ${message.sender === 'user' && 'text-[#454545] max-w-[60%] bg-[#DBE9FE]'} text-black`}>
-                                                <p>{message.message}</p>
+                                            </div>
+                                        )
+                                    })}
+                                    {/* the generating code */}
+                                    {
+                                        isStreaming &&
+                                        <div className={`w-full items-start flex justify-start`}>
+                                            <div className='border rounded-full h-fit p-1 mt-4'>
+                                                <Image className='border' src="/fm-bot-logo.png" alt="globe" height={20} width={20} />
+                                            </div>
+                                            <div className={`p-4 flex-1 rounded-2xl w-auto text-black`}>
+                                                {/* <p>{outputMessage.message}</p> */}
+                                                Generating
                                             </div>
                                         </div>
-                                    ))}
+
+                                    }
                                 </div>
                             </div>
                             <div className='w-full flex-1 flex flex-col items-center justify-center'>
@@ -180,8 +271,8 @@ export default function ChatPage(): React.ReactElement {
                                     {!messages && <h1 className='text-3xl'>What can I help you with today?</h1>}
                                     <form onSubmit={sendMessage} className='justify-self-end self-end flex flex-col w-full rounded-2xl shadow-xl  border-[1px] px-3 py-2 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-[#888888] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50'>
                                         <textarea value={inputMessage?.message}
-                                            // onChange={(e) => handleInputMessage(e.target.value)}
-                                            placeholder='Ask me anythasdfing'
+                                            onChange={(e) => handleInputMessage(e.target.value)}
+                                            placeholder='Ask me anything...'
                                             className="flex w-full rounded-md bg-transparent px-3 py-2 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-[#888888] placeholder:text-lg focus-visible:ring-0 focus:ring-0 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50">
                                         </textarea>
                                         <div className='w-full h-16 flex items-center justify-end px-3'>

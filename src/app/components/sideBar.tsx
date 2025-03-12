@@ -3,22 +3,24 @@
 import { GiHamburgerMenu } from 'react-icons/gi';
 import { FiPlus } from 'react-icons/fi';
 import { useEffect, useState } from 'react';
-import { signOut } from 'next-auth/react';
-import { redirect } from 'next/dist/server/api-utils';
 import Link from 'next/link';
-type Chat = {
-    conversation_id: string
-}
+import { useParams, useRouter } from 'next/navigation';
+import { Chat } from '@/types/next';
 
-export default function sideBar({
+
+export default function Sidebar({
     children,
-    params,
+    cid,
 }: {
     children: React.ReactNode
-    params : {slug? : string}
+    cid?: string
 }) {
     const [chats, setChats] = useState<Array<Chat>>([])
+    const p = useParams()
+    const { conversationId } = p;
+    const router = useRouter()
     useEffect(() => {
+        console.log(cid)
         const cookies = document.cookie.split(';')
         let access_token = cookies.find(cookie => cookie.includes('access_token'))?.split('=')[1]
         const getAccessToken = async () => {
@@ -31,38 +33,11 @@ export default function sideBar({
             }
         }
         getAccessToken()
-        if(access_token)
-        fetchAllConversations(access_token)
-
+        if (access_token)
+            fetchAllConversations(access_token)
     }, [])
 
-    // useEffect(() => {
-
-    // }, [refreshAccessToken]);
-
-    // useEffect(() => {
-    //     const refreshTokens = async () => {
-    //         const response = await fetch("/api/auth/refresh", {
-    //             credentials : "include"
-    //         })
-    //         // console.log(await response.json())
-    //     }
-    //     refreshTokens()
-    // }, [])
-
-    useEffect(() => {
-        // let at = "";
-        // const cookies = document.cookie;
-
-        // fetchAllConversations()
-    }, [])
-
-    const fetchAllConversations = async (at : string) => {
-        const response = await fetch("/api/auth/refresh", {
-            credentials: "include"
-        })
-        const data = await response.json()
-        const accessToken = data.accessToken;
+    const fetchAllConversations = async (at: string) => {
         try {
             const response = await fetch(process.env.NEXT_PUBLIC_BACKEND_URL + "/get_conversations", {
                 method: "GET",
@@ -85,10 +60,9 @@ export default function sideBar({
         }
     }
 
-
     return (
-        <div className='h-screen w-full flex bg-white text-black'>
-            <div className="w-[360px] shadow-xl h-full px-3 flex flex-col gap-4">
+        <div className='h-screen w-full flex bg-white text-black '>
+            <div className="w-[360px] shadow-xl h-full px-3 flex flex-col gap-4 z-10">
                 <div className='w-full h-14 flex items-center gap-3'>
                     <div className='px-4 flex items-center gap-3'>
                         <GiHamburgerMenu className='h-6 w-6' />
@@ -96,17 +70,17 @@ export default function sideBar({
                     </div>
                 </div>
                 <div className=''>
-                    <button className='bg-[#DBE9FE] px-4 py-2 rounded-full text-black flex items-center gap-1'>
+                    <Link href={'/chat'} className='w-fit bg-[#DBE9FE] px-4 py-2 rounded-full text-black flex items-center gap-1'>
                         <FiPlus className='h-5 w-5' />
                         <p>New Chat</p>
-                    </button>
+                    </Link>
                 </div>
                 <div className='flex flex-col gap-2'>
                     <h6 className=' font-bold mb-2 px-3'>All Chats</h6>
                     {
-                        chats && chats.map((chat,index) => {
+                        chats && chats.map((chat, index) => {
                             return (
-                                <Link href={`/chat/${chat.conversation_id}`} key={chat.conversation_id} className={`rounded-full h-10 flex items-center px-4 cursor-pointer`}>Chat {index+1}</Link>
+                                <button onClick={()=>{router.push(`/chat/${chat.conversation_id}`)}} disabled={chat.conversation_id == conversationId} key={chat.conversation_id} className={`rounded-full h-10 flex items-center px-4 ${conversationId == chat.conversation_id ? "bg-[#EFF6FF]" : "cursor-pointer"}`}>Chat {index + 1}</button>
                             )
                         })
                     }
