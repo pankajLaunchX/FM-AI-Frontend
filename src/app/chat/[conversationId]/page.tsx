@@ -53,12 +53,15 @@ export default function ChatPage(): React.ReactElement {
             })
 
             const data = await response.json();
-            const fetchedMessages = data.messages.map((message: any) => {
+            const fetchedMessages = data.messages?.map((message: any) => {
                 if (message.message_type === 'user') {
                     return message
                 }
                 const cleanedMessage = message.message.replace(/https?:\/\/[^\s]+/g, '');
-                const urls = message.message.match(/(https?:\/\/[^\s]+)/g);
+                const urls = message.message.match(/(https?:\/\/[^\s]+)/g)?.map((url:string) => url.replace(/,$/, ''));
+
+                
+                console.log(urls)
                 return {
                     ...message,
                     message: cleanedMessage,
@@ -181,7 +184,7 @@ export default function ChatPage(): React.ReactElement {
                                                     {message.links && message.links.length > 0 &&
                                                         <div className='my-5 flex flex-col gap-2'>
                                                             {message.links.map((link, ind) => {
-                                                                return (<Link className='text-blue-600' href={link} key={ind}>
+                                                                return (<Link className='text-blue-600' href={link} key={ind} target="_blank">
                                                                     {ind + 1 + ". "}{link.length > 100 ? `${link.slice(0, 70)}...` : link}
                                                                 </Link>)
                                                             })}
