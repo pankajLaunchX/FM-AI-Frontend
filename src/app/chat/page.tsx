@@ -9,15 +9,19 @@ import { GiHamburgerMenu } from 'react-icons/gi';
 import { FiPlus } from 'react-icons/fi';
 import { signOut } from 'next-auth/react';
 import { useSession } from 'next-auth/react';
-import { redirect, useRouter } from 'next/navigation';
+import { redirect } from 'next/navigation';
 import { get } from 'http';
 import { sign } from 'crypto';
 import { useAuthStore } from '../store/useAuthStore';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation'
 
 // let socket: SocketIOClient.Socket
 export default function ChatPage() {
-    const [inputMessage, setInputMessage] = useState<Message>()
+    const [inputMessage, setInputMessage] = useState<Message>({
+        message: "",
+        message_type: "user"
+    })
     const [outputMessage, setOutputMessage] = useState<Message>({
         message: "",
         message_type: "bot"
@@ -31,6 +35,7 @@ export default function ChatPage() {
     const [refreshToken, setRefreshToken] = useState<string>("")
     const { refreshAccessToken, accessToken } = useAuthStore();
     const [isStreaming, setIsStreaming] = useState<boolean>(false)
+
 
     useEffect(() => {
         if (status === 'unauthenticated') {
@@ -78,95 +83,62 @@ export default function ChatPage() {
             const data = await response.json()
             access_token = data.accessToken;
         }
-        // if (inputMessage?.message.trim() && socket) {
-        //     socket.emit('chat message', inputMessage)
-        //     if (inputMessage) setMessages((prevMessages: Message[]) => [...prevMessages, inputMessage])
-        //     setInputMessage({ message: "", message_type: "" })
-        // }
-        // await fetch('/api/dummy', {
-        //     method: 'GET',
-        // })
-        //     .then(res => res.json())
-        //     .then(data => {
-        //         setMessages(data)
-        //     })
         setOutputMessage({ message: "", message_type: "bot" });
         if (!inputMessage) return;
         let cid ;
         if (access_token)
             cid = await generateConversationId(access_token);
-            setMessages((prev) => [...prev, inputMessage])
-        setIsStreaming(true)
-        const eventSource = new EventSource(process.env.NEXT_PUBLIC_BACKEND_URL + `/send_message_sse?message=${encodeURIComponent(inputMessage.message)}&conversation_id=${cid?.data}&access_token=${access_token}`)
-        let msg = ""
+        setMessages((prev) => [...prev, inputMessage])
+        if (inputMessage?.message)
+            router.push(`/chat/${cid?.data}?message=${encodeURIComponent(inputMessage?.message)}`)
+        // const eventSource = new EventSource(process.env.NEXT_PUBLIC_BACKEND_URL + `/send_message_sse?message=${encodeURIComponent(inputMessage.message)}&conversation_id=${cid?.data}&access_token=${access_token}`)
+        // let msg = ""
 
-        eventSource.onmessage = (event) => {
-            // console.log(event.data)
-            const newChunk = JSON.parse(event.data).response; // Parse JSON response
-            msg += newChunk
-            const urlMatch = newChunk.match(/https?:\/\/[^\s]+/);
-            if (urlMatch) {
-                const fullUrl = urlMatch[0];
+        // eventSource.onmessage = (event) => {
+        //     // console.log(event.data)
+        //     const newChunk = JSON.parse(event.data).response; // Parse JSON response
+        //     msg += newChunk
+        //     const urlMatch = newChunk.match(/https?:\/\/[^\s]+/);
+        //     if (urlMatch) {
+        //         const fullUrl = urlMatch[0];
 
-                setOutputMessage((prev) => ({
-                    ...prev,
-                    links: [...(prev.links ?? []), fullUrl]
-                }))
+        //         setOutputMessage((prev) => ({
+        //             ...prev,
+        //             links: [...(prev.links ?? []), fullUrl]
+        //         }))
 
-            } else {
-                setOutputMessage((prev) => ({
-                    ...prev,
-                    message_type: "bot",
-                    message: prev.message + " " + newChunk
-                }))
-            }
-            // setOutputMessage((prev) => ({
-            //     ...prev,
-            //     message_type: "bot",
-            //     message: prev.message +  " " + newChunk
-            // })
-            // )
-        };
-
-        if (msg.includes("Sources: ")) {
-            const sources = msg.split("Sources: ")[1];
-            console.log(sources.split(","))
-        }
-
-        eventSource.onerror = () => {
-            console.error("SSE Error");
-            eventSource.close();
-            setIsStreaming(false)
-        };
-
-        eventSource.addEventListener("end", () => {
-            eventSource.close();
-            setIsStreaming(false)
-        });
-
-        // Clear input field
-        setInputMessage({ message: "", message_type: "user" });
-        setOutputMessage({ message: "", message_type: "bot" });
-
-        // try {
-        //     const responseMessage = await fetch(process.env.NEXT_PUBLIC_BACKEND_URL + `/send_message_sse?message=${encodeURIComponent(inputMessage.message)}&conversation_id=${cid}&access_token=${access_token}
-        // `, {
-        //         method: "GET",
-        //         headers: {
-        //             "content-type": "application/json"
-        //         }
-        //     })
-
-        //     if (!responseMessage.ok) {
-        //         throw new Error(`Failed to get a response message. Status : ${responseMessage.status}`)
+        //     } else {
+        //         setOutputMessage((prev) => ({
+        //             ...prev,
+        //             message_type: "bot",
+        //             message: prev.message + " " + newChunk
+        //         }))
         //     }
+        // };
 
-        //     const data = await responseMessage.json();
-        //     console.log(data);
+        // if (msg.includes("Sources: ")) {
+        //     const sources = msg.split("Sources: ")[1];
+        //     console.log(sources.split(","))
         // }
-        // catch (error) {
-        //     console.log(error)
-        // }
+
+        // eventSource.onerror = () => {
+        //     console.error("SSE Error");
+        //     eventSource.close();
+        //     setIsStreaming(false)
+        // };
+
+        // eventSource.addEventListener("end", () => {
+        //     eventSource.close();
+        //     setIsStreaming(false)
+        // });
+
+        // router.push(`/chat/${cid?.data}`)
+
+
+        // // Clear input field
+        // setInputMessage({ message: "", message_type: "user" });
+        // setOutputMessage({ message: "", message_type: "bot" });
+
     }
 
     const handleInputMessage = (message: string) => {
@@ -236,7 +208,7 @@ export default function ChatPage() {
                             <div className='w-3/4 h-full flex justify-center items-center flex-col gap-4'>
                                 {messages.length == 0 && <h1 className='text-3xl'>What can I help you with today?</h1>}
                                 <form onSubmit={sendMessage} className='flex flex-col w-full rounded-2xl shadow-xl  border-[1px] px-3 py-2 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-[#888888] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50'>
-                                    <textarea value={inputMessage?.message}
+                                    <textarea value={inputMessage.message}
                                         onChange={(e) => handleInputMessage(e.target.value)}
                                         placeholder='Ask me anything'
                                         className="flex w-full rounded-md bg-transparent px-3 py-2 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-[#888888] placeholder:text-lg focus-visible:ring-0 focus:ring-0 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50">

@@ -35,7 +35,7 @@ export default function Sidebar({
         getAccessToken()
         if (access_token)
             fetchAllConversations(access_token)
-    }, [])
+    }, [conversationId])
 
     const fetchAllConversations = async (at: string) => {
         try {
@@ -66,7 +66,7 @@ export default function Sidebar({
                 <div className='w-full h-14 flex items-center gap-3'>
                     <div className='px-4 flex items-center gap-3'>
                         <GiHamburgerMenu className='h-6 w-6' />
-                        <p className='text-2xl'>FM AuI</p>
+                        <p className='text-2xl'>FM AI</p>
                     </div>
                 </div>
                 <div className=''>
@@ -75,8 +75,9 @@ export default function Sidebar({
                         <p>New Chat</p>
                     </Link>
                 </div>
-                <div className='flex flex-col gap-2'>
-                    <h6 className=' font-bold mb-2 px-3'>All Chats</h6>
+                <div className='flex flex-col gap-2 overflow-scroll'>
+                    <h6 className='font-bold mb-2 px-3'>All Chats</h6>
+                    <div className='lex-1 flex flex-col gap-3 mb-20'>
                     {
                         chats && chats.map((chat, index) => {
                             return (
@@ -84,6 +85,7 @@ export default function Sidebar({
                             )
                         })
                     }
+                    </div>
                 </div>
             </div>
             {children}
