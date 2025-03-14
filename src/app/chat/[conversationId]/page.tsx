@@ -1,7 +1,7 @@
 "use client"
 
 import { Message } from '@/types/next';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { IoPersonCircle, IoSend } from "react-icons/io5";
 import { signOut } from 'next-auth/react';
@@ -25,6 +25,9 @@ export default function ChatPage(): React.ReactElement {
     )
     const [isStreaming, setIsStreaming] = useState<boolean>(false)
     const { status } = useSession()
+
+    const lastMessageRef = useRef<HTMLDivElement | null>(null);
+    const chatContainerRef = useRef<HTMLDivElement | null>(null);
 
     const params = useParams();
     const { conversationId } = params;
@@ -84,6 +87,7 @@ export default function ChatPage(): React.ReactElement {
         if (parsedUrls) {
             outputMessage.links = parsedUrls;
         }
+        if(outputMessage.message)
         setMessages((prev) => [...prev, outputMessage])
 
     }, [isStreaming])
@@ -108,6 +112,7 @@ export default function ChatPage(): React.ReactElement {
         // setMessages((prev) => [...prev, message])
 
         setMessages((prev) => [...prev, message])
+
         if (access_token) {
             setIsStreaming(true)
             const eventSource = new EventSource(process.env.NEXT_PUBLIC_BACKEND_URL + `/send_message_sse?message=${encodeURIComponent(message.message)}&conversation_id=${conversationId}&access_token=${access_token}`)
@@ -152,6 +157,12 @@ export default function ChatPage(): React.ReactElement {
 
     }
 
+    useEffect(() => {
+        if (lastMessageRef.current) {
+          lastMessageRef.current.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, [messages]);
+
     return (
 
         <div className='w-full h-screen flex justify-center items-center bg-white text-black'>
@@ -166,14 +177,14 @@ export default function ChatPage(): React.ReactElement {
                             </button>
                         </div>
                         <div className='w-full h-[90%] flex flex-col items-start justify-start'>
-                            <div className=' overflow-y-scroll w-full pr-3 flex justify-center gap-4'>
+                            <div ref={chatContainerRef} className=' overflow-y-scroll w-full pr-3 flex justify-center gap-4'>
                                 <div className='w-3/4 flex flex-col gap-4'>
                                     {messages && messages.map((message, index) => {
                                         if (message.message_type === 'system') {
                                             return;
                                         }
                                         return (
-                                            <div key={index} className={`w-full items-start flex ${message.message_type === 'bot' ? 'justify-start' : 'justify-end'}`}>
+                                            <div key={index} ref={index === messages.length - 1 ? lastMessageRef : null} className={`w-full items-start flex ${message.message_type === 'bot' ? 'justify-start' : 'justify-end'}`}>
                                                 {message.message_type == 'bot' &&
                                                     <div className='border rounded-full h-fit p-1 mt-4'>
                                                         <Image className='border' src="/fm-bot-logo.png" alt="globe" height={20} width={20} />
@@ -215,7 +226,7 @@ export default function ChatPage(): React.ReactElement {
                                 <div className='w-3/4 h-full flex flex-col justify-end gap-4'>
                                     {!messages && <h1 className='text-3xl'>What can I help you with today?</h1>}
                                     <div  className='justify-self-end self-end flex flex-col w-full rounded-2xl shadow-xl  border-[1px] px-3 py-2 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-[#888888] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50'>
-                                        <textarea value=""
+                                        <textarea value={inputMessage.message ? inputMessage.message : ""}
                                             onChange={(e) => handleInputMessage(e.target.value)}
                                             placeholder='Ask me anything...'
                                             className="flex w-full rounded-md bg-transparent px-3 py-2 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-[#888888] placeholder:text-lg focus-visible:ring-0 focus:ring-0 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50">
