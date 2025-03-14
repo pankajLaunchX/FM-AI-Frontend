@@ -10,17 +10,14 @@ import { Chat } from '@/types/next';
 
 export default function Sidebar({
     children,
-    cid,
 }: {
     children: React.ReactNode
-    cid?: string
 }) {
     const [chats, setChats] = useState<Array<Chat>>([])
     const p = useParams()
     const { conversationId } = p;
     const router = useRouter()
     useEffect(() => {
-        console.log(cid)
         const cookies = document.cookie.split(';')
         let access_token = cookies.find(cookie => cookie.includes('access_token'))?.split('=')[1]
         const getAccessToken = async () => {

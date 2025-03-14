@@ -1,18 +1,12 @@
 "use client"
 
 import { Message } from '@/types/next';
-import React, { use, useEffect, useState } from 'react';
-import io from 'socket.io-client';
+import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
-import { IoPersonCircle, IoPulse, IoSend } from "react-icons/io5";
-import { GiHamburgerMenu } from 'react-icons/gi';
-import { FiPlus } from 'react-icons/fi';
+import { IoPersonCircle, IoSend } from "react-icons/io5";
 import { signOut } from 'next-auth/react';
 import { useSession } from 'next-auth/react';
 import { redirect } from 'next/navigation';
-import { get } from 'http';
-import { sign } from 'crypto';
-import { useAuthStore } from '../store/useAuthStore';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation'
 
@@ -22,19 +16,20 @@ export default function ChatPage() {
         message: "",
         message_type: "user"
     })
-    const [outputMessage, setOutputMessage] = useState<Message>({
-        message: "",
-        message_type: "bot"
-    })
+    
+    // const [outputMessage, setOutputMessage] = useState<Message>({
+    //     message: "",
+    //     message_type: "bot"
+    // })
     const [messages, setMessages] = useState<Message[]>([])
     // const [accessToken, setAccessToken] = useState<string>("")
-    const { data: session, status } = useSession()
-    const [conversationId, setConversationId] = useState<string>("")
+    const { status } = useSession()
+    // const [conversationId, setConversationId] = useState<string>("")
     const router = useRouter()
-    const [conversations, setConversations] = useState<Array<string>>([])
-    const [refreshToken, setRefreshToken] = useState<string>("")
-    const { refreshAccessToken, accessToken } = useAuthStore();
-    const [isStreaming, setIsStreaming] = useState<boolean>(false)
+    // const [conversations, setConversations] = useState<Array<string>>([])
+    // const [refreshToken, setRefreshToken] = useState<string>("")
+    // const { refreshAccessToken, accessToken } = useAuthStore();
+    // const [isStreaming, setIsStreaming] = useState<boolean>(false)
 
 
     useEffect(() => {
@@ -43,10 +38,10 @@ export default function ChatPage() {
         }
     }, [status])
 
-    useEffect(() => {
-        if (outputMessage.message)
-            setMessages(prev => ([...prev, outputMessage]))
-    }, [isStreaming])
+    // useEffect(() => {
+    //     if (outputMessage.message)
+    //         setMessages(prev => ([...prev, outputMessage]))
+    // }, [isStreaming])
 
     const generateConversationId = async (access_token: string) => {
         try {
@@ -63,7 +58,7 @@ export default function ChatPage() {
 
             const data = await newConversationId.json();
             console.log("Conversation Id ==> ", data.conversation_id)
-            setConversationId(data.conversation_id)
+            // setConversationId(data.conversation_id)
             return { success: true, data: data.conversation_id }
         }
         catch (error) {
@@ -83,7 +78,7 @@ export default function ChatPage() {
             const data = await response.json()
             access_token = data.accessToken;
         }
-        setOutputMessage({ message: "", message_type: "bot" });
+        // setOutputMessage({ message: "", message_type: "bot" });
         if (!inputMessage) return;
         let cid ;
         if (access_token)
@@ -189,17 +184,15 @@ export default function ChatPage() {
                                 ))}
                                 {/* the generating code */}
                                 {
-                                    isStreaming &&
-                                    <div className={`w-full items-start flex justify-start`}>
-                                        <div className='border rounded-full h-fit p-1 mt-4'>
-                                            <Image className='border' src="/fm-bot-logo.png" alt="globe" height={20} width={20} />
-                                        </div>
-                                        <div className={`p-4 flex-1 rounded-2xl w-auto text-black`}>
-                                            {/* <p>{outputMessage.message}</p> */}
-                                            Generating
-                                        </div>
-                                    </div>
-
+                                    // <div className={`w-full items-start flex justify-start`}>
+                                    //     <div className='border rounded-full h-fit p-1 mt-4'>
+                                    //         <Image className='border' src="/fm-bot-logo.png" alt="globe" height={20} width={20} />
+                                    //     </div>
+                                    //     <div className={`p-4 flex-1 rounded-2xl w-auto text-black`}>
+                                    //         {/* <p>{outputMessage.message}</p> */}
+                                    //         Generating
+                                    //     </div>
+                                    // </div>
                                 }
                             </div>
                         </div>

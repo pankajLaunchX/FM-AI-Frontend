@@ -56,7 +56,7 @@ export default function ChatPage(): React.ReactElement {
             })
 
             const data = await response.json();
-            const fetchedMessages = data.messages?.map((message: any) => {
+            const fetchedMessages = data.messages?.map((message: Message) => {
                 if (message.message_type === 'user') {
                     return message
                 }
@@ -109,19 +109,16 @@ export default function ChatPage(): React.ReactElement {
         if (!message.message) return;
         console.log("on line 93")
         
-        // setMessages((prev) => [...prev, message])
 
         setMessages((prev) => [...prev, message])
 
         if (access_token) {
             setIsStreaming(true)
             const eventSource = new EventSource(process.env.NEXT_PUBLIC_BACKEND_URL + `/send_message_sse?message=${encodeURIComponent(message.message)}&conversation_id=${conversationId}&access_token=${access_token}`)
-            let msg = ""
 
             eventSource.onmessage = (event) => {
                 // console.log(event.data)
                 const newChunk = JSON.parse(event.data).response; // Parse JSON response
-                msg += newChunk
                 // const urlMatch = newChunk.match(/https?:\/\/[^\s]+/);
 
                 setOutputMessage((prev) => ({

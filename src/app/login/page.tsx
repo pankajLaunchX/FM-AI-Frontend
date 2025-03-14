@@ -7,7 +7,7 @@ import { redirect } from "next/navigation";
 import styles from "./login.module.css";
 
 export default function LoginPage(): React.ReactElement {
-  const [loginUrl, setLoginUrl] = React.useState<string>("")
+  // const [loginUrl, setLoginUrl] = React.useState<string>("")
 
   const { data: session } = useSession()
 
@@ -62,7 +62,7 @@ export default function LoginPage(): React.ReactElement {
       <div className={styles.loginSide}>
         <div className="w-3/4 flex flex-col justify-center items-center gap-8">
           <div className="flex flex-col items-center">
-            <h1 className="text-3xl">Hi I'm <strong>FM AI</strong>,</h1>
+            <h1 className="text-3xl">Hi I&apos;m <strong>FM AI</strong>,</h1>
             <h1 className="text-3xl">Your personal sales coach.</h1>
           </div>
           <button onClick={handleSignIn} className="w-1/2 bg-[#223F97] text-white font-bold p-2 rounded-full">
