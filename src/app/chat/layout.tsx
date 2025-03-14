@@ -1,6 +1,6 @@
 import dynamic from "next/dynamic"
 
-const ClientSidebar = dynamic(() => import("../components/Sidebar"))
+const ClientSidebar = dynamic(() => import("../components/LeftSidebar"))
 export default function Layout({
     children
 }: {

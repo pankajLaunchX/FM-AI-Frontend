@@ -8,7 +8,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { Chat } from '@/types/next';
 
 
-export default function Sidebar({
+export default function LeftSidebar({
     children,
 }: {
     children: React.ReactNode
